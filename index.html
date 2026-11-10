@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Заметки</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg: #F7F6F4;
+            --card: #FFFFFF;
+            --text: #171717;
+            --sub: #85838A;
+            --border: #C9C7CC;
+            --done: #242424;
+            --line: #EDECEE;
+
+            --ease-motion: cubic-bezier(0.22, 1, 0.36, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .screen {
+            padding: 20px;
+            padding-bottom: 40px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 16px;
+            min-height: 44px;
+        }
+
+        .icon-button {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text);
+            transition: transform 200ms var(--ease-motion);
+        }
+
+        .icon-button:active { transform: scale(0.88); }
+        .icon-button svg { width: 22px; height: 22px; }
+
+        .search-container {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: all 380ms var(--ease-motion);
+            margin-bottom: 0;
+        }
+
+        .search-container.open {
+            max-height: 60px;
+            opacity: 1;
+            transform: translateY(0);
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            height: 44px;
+            border-radius: 14px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            padding: 0 14px;
+            font-size: 16px;
+            color: var(--text);
+            outline: none;
+        }
+
+        .create-button {
+            width: 100%;
+            height: 48px;
+            border-radius: 16px;
+            background: var(--text);
+            color: #FFFFFF;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: transform 200ms var(--ease-motion), opacity 200ms var(--ease-motion);
+        }
+
+        .create-button:active { transform: scale(0.97); opacity: 0.88; }
+
+        .notes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+        }
+
+        .note-card {
+            background: var(--card);
+            border-radius: 22px;
+            padding: 18px 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            cursor: pointer;
+            will-change: transform, opacity;
+            transition: transform 600ms var(--ease-motion), opacity 240ms var(--ease-motion);
+        }
+
+        .note-card.entering { animation: cardEnter 420ms var(--ease-motion) both; }
+
+        @keyframes cardEnter {
+            from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .note-card:active { transform: scale(0.985); }
+        .note-card.completed { opacity: 0.72; }
+        .note-card.completing { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); }
+        .note-card.hidden-by-search { display: none; }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-title {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 24px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            transition: color 240ms var(--ease-motion);
+        }
+
+        .completed .card-title { color: var(--sub); }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+            margin: -10px;
+            padding: 10px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .checkbox {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background-color 280ms var(--ease-motion), border-color 280ms var(--ease-motion), transform 220ms var(--ease-spring);
+        }
+
+        .checkbox-wrapper:active .checkbox { transform: scale(0.85); }
+        .checkbox.checked { background-color: var(--done); border-color: var(--done); }
+
+        .checkmark {
+            color: #FFFFFF;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+            animation: checkIn 300ms var(--ease-spring) both;
+        }
+
+        @keyframes checkIn {
+            from { opacity: 0; transform: scale(0.3) rotate(-20deg); }
+            60% { transform: scale(1.15) rotate(0deg); }
+            to { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--sub);
+            font-size: 16px;
+            margin-top: 60px;
+        }
+
+        /* ===== РЕДАКТОР ===== */
+        .editor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            animation: editorIn 420ms var(--ease-motion) both;
+        }
+
+        @keyframes editorIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .editor.closing { animation: editorOut 280ms var(--ease-motion) both; }
+
+        @keyframes editorOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(35%); }
+        }
+
+        .editor-header {
+            display: flex;
+            justify-content: flex-start;
+            padding: 20px;
+        }
+
+        .text-button {
+            background: none;
+            border: none;
+            font-size: 17px;
+            color: var(--text);
+            cursor: pointer;
+            padding: 8px 0;
+            min-width: 60px;
+            transition: opacity 180ms var(--ease-motion);
+        }
+
+        .text-button:active { opacity: 0.5; }
+
+        .editor-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 120px;
+        }
+
+        .title-input {
+            width: 100%;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            border: none;
+            background: none;
+            outline: none;
+            margin-bottom: 16px;
+            padding: 0;
+        }
+
+        .title-input::placeholder { color: var(--sub); }
+
+        /* ===== ТУМБЛЕР ТЕКСТ/СПИСОК ===== */
+        .mode-row {
+            position: relative;
+            display: inline-flex;
+            background: #EFEDEA;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        /* Скользящий фон тумблера */
+        .mode-row::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            height: calc(100% - 8px);
+            width: calc(50% - 4px);
+            background: var(--card);
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: transform 280ms var(--ease-motion);
+            z-index: 1;
+        }
+
+        .mode-row[data-mode="checklist"]::before {
+            transform: translateX(100%);
+        }
+
+        .mode-btn {
+            position: relative;
+            z-index: 2;
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: none;
+            background: none;
+            color: var(--sub);
+            font-size: 14px;
+            cursor: pointer;
+            transition: color 200ms var(--ease-motion), transform 180ms var(--ease-motion);
+            user-select: none;
+        }
+
+        .mode-btn:active { transform: scale(0.94); }
+        .mode-btn.active { color: var(--text); font-weight: 600; }
+
+        .content-wrapper {
+            position: relative;
+            min-height: 180px;
+        }
+
+        .content-section {
+            animation: contentIn 320ms var(--ease-motion) both;
+        }
+
+        .content-section.fading-out {
+            animation: contentOut 135ms var(--ease-motion) both;
+        }
+
+        @keyframes contentIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes contentOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-4px); }
+        }
+
+        .body-input {
+            width: 100%;
+            min-height: 180px;
+            border-radius: 16px;
+            background: var(--card);
+            border: none;
+            padding: 16px;
+            font-size: 16px;
+            line-height: 22px;
+            color: var(--text);
+            outline: none;
+            resize: none;
+            font-family: inherit;
+        }
+
+        .body-input::placeholder { color: var(--sub); }
+
+        .items-editor {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            background: var(--card);
+            border-radius: 16px;
+            padding: 10px 14px;
+            gap: 10px;
+            animation: itemIn 300ms var(--ease-motion) both;
+        }
+
+        @keyframes itemIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .item-row.removing {
+            animation: itemOut 190ms var(--ease-motion) both;
+            pointer-events: none;
+        }
+
+        @keyframes itemOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(24px); }
+        }
+
+        .item-checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+            margin: -10px;
+            cursor: pointer;
+        }
+
+        .item-input {
+            flex: 1;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: var(--text);
+            outline: none;
+            padding: 6px 0;
+            font-family: inherit;
+            text-decoration-line: line-through;
+            text-decoration-color: transparent;
+            transition: color 240ms var(--ease-motion), text-decoration-color 240ms var(--ease-motion);
+        }
+
+        .item-input.done {
+            color: var(--sub);
+            text-decoration-color: var(--sub);
+        }
+
+        .item-input::placeholder { color: var(--sub); }
+
+        .item-delete {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--sub);
+            font-size: 18px;
+            transition: opacity 180ms var(--ease-motion), transform 180ms var(--ease-motion);
+        }
+
+        .item-delete:active { opacity: 0.5; transform: scale(0.88); }
+
+        .add-item-input {
+            width: 100%;
+            height: 48px;
+            border-radius: 16px;
+            background: var(--card);
+            border: none;
+            padding: 0 16px;
+            font-size: 16px;
+            color: var(--text);
+            outline: none;
+            font-family: inherit;
+        }
+
+        .add-item-input::placeholder { color: var(--sub); }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            right: 24px;
+            bottom: 28px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--text);
+            color: #FFFFFF;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+            z-index: 110;
+            animation: fabIn 420ms var(--ease-spring) both;
+            transition: transform 200ms var(--ease-motion), box-shadow 200ms var(--ease-motion);
+        }
+
+        .fab:active { transform: scale(0.9); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+        .fab svg { width: 26px; height: 26px; }
+
+        @keyframes fabIn {
+            from { opacity: 0; transform: scale(0.4) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="screen">
+            <div class="top-bar">
+                <button class="icon-button" id="searchToggle" aria-label="Поиск">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="search-container" id="searchContainer">
+                <input type="text" class="search-input" id="searchInput" placeholder="Поиск заметок…">
+            </div>
+
+            <button class="create-button" id="createButton">+ Новая заметка</button>
+
+            <div class="notes-list" id="notesList"></div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'notes.v1';
+        const FLIP_DURATION = 600;
+
+        let notes = [];
+        let editingNote = null;
+        let searchOpen = false;
+        let searchQuery = '';
+        let previousPositions = new Map();
+        let isSearching = false;
+
+        const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+
+        const isNoteCompleted = (note) => {
+            const allItemsCompleted = note.items.every(item => item.completed);
+            return note.titleCompleted && allItemsCompleted;
+        };
+
+        const noteHasContent = (note) => {
+            return Boolean(
+                note.title.trim() ||
+                note.body.trim() ||
+                note.items.some(item => item.text.trim())
+            );
+        };
+
+        const matchesQuery = (note, query) => {
+            const q = query.trim().toLowerCase();
+            if (!q) return true;
+            return (
+                note.title.toLowerCase().includes(q) ||
+                note.body.toLowerCase().includes(q) ||
+                note.items.some(item => item.text.toLowerCase().includes(q))
+            );
+        };
+
+        const sortNotes = (notes) => {
+            const active = notes.filter(n => !isNoteCompleted(n));
+            const done = notes
+                .filter(isNoteCompleted)
+                .sort((a, b) => (a.completedAt ?? 0) - (b.completedAt ?? 0));
+            return [...active, ...done];
+        };
+
+        const loadNotes = () => {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) notes = JSON.parse(raw);
+            } catch (e) { console.error('Ошибка загрузки заметок:', e); }
+        };
+
+        const saveNotes = () => {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)); }
+            catch (e) { console.error('Ошибка сохранения заметок:', e); }
+        };
+
+        const capturePositions = () => {
+            const cards = document.querySelectorAll('.note-card');
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                previousPositions.set(card.dataset.id, { top: rect.top, left: rect.left });
+            });
+        };
+
+        const animateReorder = () => {
+            if (isSearching) return;
+            const cards = document.querySelectorAll('.note-card');
+            cards.forEach(card => {
+                const id = card.dataset.id;
+                const prevPos = previousPositions.get(id);
+                if (!prevPos) return;
+                const newRect = card.getBoundingClientRect();
+                const deltaY = prevPos.top - newRect.top;
+                const deltaX = prevPos.left - newRect.left;
+                if (Math.abs(deltaY) > 1 || Math.abs(deltaX) > 1) {
+                    card.style.transition = 'none';
+                    card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                    card.offsetHeight;
+                    card.style.transition = `transform ${FLIP_DURATION}ms var(--ease-motion)`;
+                    card.style.transform = 'translate(0, 0)';
+                    setTimeout(() => {
+                        if (card && card.style) { card.style.transition = ''; card.style.transform = ''; }
+                    }, FLIP_DURATION + 50);
+                }
+            });
+        };
+
+        const escapeHtml = (str) => {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        };
+
+        const getDisplayTitle = (note) => {
+            const nonEmptyItems = note.items.filter(i => i.text.trim());
+            const bodyFallback = note.mode === 'checklist' && nonEmptyItems.length === 0 && note.body.trim().length > 0;
+            const effectiveMode = bodyFallback ? 'text' : note.mode;
+            const bodyLines = note.body.trim().split('\n');
+            const firstBodyLine = bodyLines[0]?.trim() ?? '';
+            return note.title.trim() ||
+                (effectiveMode === 'text' ? firstBodyLine : nonEmptyItems[0]?.text.trim()) || '';
+        };
+
+        const buildCardHTML = (note) => {
+            const completed = isNoteCompleted(note);
+            const titleText = getDisplayTitle(note);
+            return `
+                <div class="card-header">
+                    <div class="checkbox-wrapper" data-action="toggle-title" data-id="${note.id}">
+                        <div class="checkbox ${note.titleCompleted ? 'checked' : ''}">
+                            ${note.titleCompleted ? '<span class="checkmark">✓</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="card-title">${escapeHtml(titleText)}</div>
+                </div>
+            `;
+        };
+
+        const updateCard = (note) => {
+            const card = document.querySelector(`.note-card[data-id="${note.id}"]`);
+            if (!card) return;
+            const completed = isNoteCompleted(note);
+            const titleText = getDisplayTitle(note);
+            card.classList.toggle('completed', completed);
+            const checkbox = card.querySelector('.checkbox');
+            if (checkbox) {
+                const wasChecked = checkbox.classList.contains('checked');
+                checkbox.classList.toggle('checked', note.titleCompleted);
+                if (!wasChecked && note.titleCompleted) checkbox.innerHTML = '<span class="checkmark">✓</span>';
+                else if (wasChecked && !note.titleCompleted) checkbox.innerHTML = '';
+            }
+            const title = card.querySelector('.card-title');
+            if (title) title.textContent = titleText;
+        };
+
+        const findPreviousVisibleCard = (list, currentId, sorted) => {
+            const idx = sorted.findIndex(n => n.id === currentId);
+            for (let i = idx - 1; i >= 0; i--) {
+                const prevId = sorted[i].id;
+                if (!matchesQuery(notes.find(n => n.id === prevId), searchQuery)) continue;
+                const card = list.querySelector(`.note-card[data-id="${prevId}"]`);
+                if (card && !card.classList.contains('hidden-by-search')) return card;
+            }
+            return null;
+        };
+
+        const attachCardHandlers = (card) => {
+            card.addEventListener('click', (e) => {
+                const target = e.target.closest('[data-action="toggle-title"]');
+                if (target) {
+                    e.stopPropagation();
+                    toggleTitle(target.dataset.id);
+                    return;
+                }
+                openEditor(card.dataset.id);
+            });
+        };
+
+        const renderNotes = ({ newNoteId = null, animateReorder: shouldAnimate = true } = {}) => {
+            if (shouldAnimate) capturePositions();
+            const list = document.getElementById('notesList');
+            const sorted = sortNotes(notes);
+
+            if (notes.length === 0) {
+                list.innerHTML = '<div class="empty-state">Пока нет заметок</div>';
+                return;
+            }
+
+            const existingCards = new Map();
+            list.querySelectorAll('.note-card').forEach(card => existingCards.set(card.dataset.id, card));
+
+            const visibleIds = new Set();
+            sorted.forEach(note => { if (matchesQuery(note, searchQuery)) visibleIds.add(note.id); });
+
+            if (visibleIds.size === 0 && notes.length > 0) {
+                existingCards.forEach(card => card.remove());
+                if (!list.querySelector('.empty-state')) {
+                    const empty = document.createElement('div');
+                    empty.className = 'empty-state';
+                    empty.textContent = 'Ничего не найдено';
+                    list.appendChild(empty);
+                }
+                return;
+            }
+
+            const emptyState = list.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+
+            existingCards.forEach((card, id) => {
+                if (!visibleIds.has(id)) card.classList.add('hidden-by-search');
+                else card.classList.remove('hidden-by-search');
+            });
+
+            sorted.forEach(note => {
+                const card = existingCards.get(note.id);
+                if (card) {
+                    updateCard(note);
+                    if (card.parentElement !== list || card !== list.lastElementChild) {
+                        const prevVisibleCard = findPreviousVisibleCard(list, note.id, sorted);
+                        if (prevVisibleCard) {
+                            if (card.previousElementSibling !== prevVisibleCard) {
+                                list.insertBefore(card, prevVisibleCard.nextElementSibling);
+                            }
+                        } else {
+                            const firstVisible = list.querySelector('.note-card:not(.hidden-by-search)');
+                            if (firstVisible && firstVisible !== card) list.insertBefore(card, firstVisible);
+                            else if (!firstVisible) list.appendChild(card);
+                        }
+                    }
+                } else if (visibleIds.has(note.id)) {
+                    const newCard = document.createElement('div');
+                    newCard.className = 'note-card';
+                    newCard.dataset.id = note.id;
+                    newCard.innerHTML = buildCardHTML(note);
+                    if (isNoteCompleted(note)) newCard.classList.add('completed');
+                    if (newNoteId === note.id) {
+                        newCard.classList.add('entering');
+                        setTimeout(() => newCard.classList.remove('entering'), 450);
+                    }
+                    const prevVisibleCard = findPreviousVisibleCard(list, note.id, sorted);
+                    if (prevVisibleCard) list.insertBefore(newCard, prevVisibleCard.nextElementSibling);
+                    else {
+                        const firstVisible = list.querySelector('.note-card:not(.hidden-by-search)');
+                        if (firstVisible) list.insertBefore(newCard, firstVisible);
+                        else list.appendChild(newCard);
+                    }
+                    attachCardHandlers(newCard);
+                }
+            });
+
+            if (shouldAnimate) animateReorder();
+        };
+
+        const toggleTitle = (id) => {
+            const note = notes.find(n => n.id === id);
+            if (!note) return;
+            const wasCompleted = isNoteCompleted(note);
+            note.titleCompleted = !note.titleCompleted;
+            note.updatedAt = Date.now();
+            const nowCompleted = isNoteCompleted(note);
+            if (!wasCompleted && nowCompleted) note.completedAt = Date.now();
+            else if (wasCompleted && !nowCompleted) note.completedAt = null;
+            saveNotes();
+            const card = document.querySelector(`.note-card[data-id="${id}"]`);
+            if (card && nowCompleted) {
+                card.classList.add('completing');
+                setTimeout(() => card.classList.remove('completing'), 500);
+            }
+            renderNotes({ animateReorder: true });
+        };
+
+        const openEditor = (id) => {
+            const note = id ? notes.find(n => n.id === id) : null;
+            editingNote = note ? JSON.parse(JSON.stringify(note)) : {
+                id: uid(), title: '', mode: 'text', body: '', items: [],
+                titleCompleted: false, createdAt: Date.now(), updatedAt: Date.now(), completedAt: null
+            };
+            renderEditor();
+        };
+
+        const renderEditor = () => {
+            const existing = document.querySelector('.editor');
+            if (existing) existing.remove();
+            const existingFab = document.querySelector('.fab');
+            if (existingFab) existingFab.remove();
+
+            const editor = document.createElement('div');
+            editor.className = 'editor';
+            editor.innerHTML = `
+                <div class="editor-header">
+                    <button class="text-button" id="backButton">Назад</button>
+                </div>
+                <div class="editor-body">
+                    <input type="text" class="title-input" id="titleInput" placeholder="Название заметки" value="${escapeHtml(editingNote.title)}">
+                    <div class="mode-row" data-mode="${editingNote.mode}">
+                        <button class="mode-btn ${editingNote.mode === 'text' ? 'active' : ''}" data-mode="text">Текст</button>
+                        <button class="mode-btn ${editingNote.mode === 'checklist' ? 'active' : ''}" data-mode="checklist">Список</button>
+                    </div>
+                    <div class="content-wrapper">
+                        <div class="content-section">
+                            ${editingNote.mode === 'text' ? `
+                                <textarea class="body-input" id="bodyInput" placeholder="Текст заметки">${escapeHtml(editingNote.body)}</textarea>
+                            ` : `
+                                <div class="items-editor" id="itemsEditor">
+                                    ${editingNote.items.map(item => `
+                                        <div class="item-row" data-item-id="${item.id}">
+                                            <div class="item-checkbox-wrapper" data-action="toggle-item-editor" data-item-id="${item.id}">
+                                                <div class="checkbox ${item.completed ? 'checked' : ''}">
+                                                    ${item.completed ? '<span class="checkmark">✓</span>' : ''}
+                                                </div>
+                                            </div>
+                                            <input type="text" class="item-input ${item.completed ? 'done' : ''}" value="${escapeHtml(item.text)}" data-item-id="${item.id}">
+                                            <button class="item-delete" data-action="delete-item" data-item-id="${item.id}">×</button>
+                                        </div>
+                                    `).join('')}
+                                    <input type="text" class="add-item-input" id="addItemInput" placeholder="Новый пункт">
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(editor);
+
+            const fab = document.createElement('button');
+            fab.className = 'fab';
+            fab.setAttribute('aria-label', 'Сохранить');
+            fab.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14"></path>
+                    <path d="M12 5v14"></path>
+                </svg>
+            `;
+            fab.addEventListener('click', saveNote);
+            document.body.appendChild(fab);
+
+            attachEditorHandlers();
+        };
+
+        const attachEditorHandlers = () => {
+            document.getElementById('backButton').addEventListener('click', closeEditor);
+
+            document.getElementById('titleInput').addEventListener('input', (e) => {
+                editingNote.title = e.target.value;
+            });
+
+            // ===== ОБРАБОТЧИКИ ТУМБЛЕРА =====
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const newMode = btn.dataset.mode;
+                    if (newMode === editingNote.mode) return;
+
+                    editingNote.mode = newMode;
+
+                    // Двигаем фон тумблера через data-mode на родителе
+                    const modeRow = document.querySelector('.mode-row');
+                    if (modeRow) modeRow.dataset.mode = newMode;
+
+                    // Обновляем активный класс на кнопках
+                    document.querySelectorAll('.mode-btn').forEach(b => {
+                        b.classList.toggle('active', b.dataset.mode === newMode);
+                    });
+
+                    // Анимация смены контента: 135ms fade out + 320ms fade in
+                    const contentSection = document.querySelector('.content-section');
+                    if (contentSection) {
+                        contentSection.classList.add('fading-out');
+                        setTimeout(() => {
+                            renderEditorContent();
+                        }, 135);
+                    } else {
+                        renderEditorContent();
+                    }
+                });
+            });
+
+            if (editingNote.mode === 'text') {
+                document.getElementById('bodyInput').addEventListener('input', (e) => {
+                    editingNote.body = e.target.value;
+                });
+            } else {
+                attachItemsHandlers();
+            }
+        };
+
+        const renderEditorContent = () => {
+            const wrapper = document.querySelector('.content-wrapper');
+            if (!wrapper) return;
+
+            const newContent = document.createElement('div');
+            newContent.className = 'content-section';
+            newContent.innerHTML = editingNote.mode === 'text' ? `
+                <textarea class="body-input" id="bodyInput" placeholder="Текст заметки">${escapeHtml(editingNote.body)}</textarea>
+            ` : `
+                <div class="items-editor" id="itemsEditor">
+                    ${editingNote.items.map(item => `
+                        <div class="item-row" data-item-id="${item.id}">
+                            <div class="item-checkbox-wrapper" data-action="toggle-item-editor" data-item-id="${item.id}">
+                                <div class="checkbox ${item.completed ? 'checked' : ''}">
+                                    ${item.completed ? '<span class="checkmark">✓</span>' : ''}
+                                </div>
+                            </div>
+                            <input type="text" class="item-input ${item.completed ? 'done' : ''}" value="${escapeHtml(item.text)}" data-item-id="${item.id}">
+                            <button class="item-delete" data-action="delete-item" data-item-id="${item.id}">×</button>
+                        </div>
+                    `).join('')}
+                    <input type="text" class="add-item-input" id="addItemInput" placeholder="Новый пункт">
+                </div>
+            `;
+
+            wrapper.innerHTML = '';
+            wrapper.appendChild(newContent);
+
+            if (editingNote.mode === 'text') {
+                document.getElementById('bodyInput').addEventListener('input', (e) => {
+                    editingNote.body = e.target.value;
+                });
+            } else {
+                attachItemsHandlers();
+            }
+        };
+
+        const attachItemsHandlers = () => {
+            document.querySelectorAll('.item-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const itemId = e.target.dataset.itemId;
+                    const item = editingNote.items.find(i => i.id === itemId);
+                    if (item) item.text = e.target.value;
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && e.target.value.trim()) {
+                        e.preventDefault();
+                        const itemId = e.target.dataset.itemId;
+                        const index = editingNote.items.findIndex(i => i.id === itemId);
+                        const newItem = { id: uid(), text: '', completed: false, order: 0 };
+                        editingNote.items.splice(index + 1, 0, newItem);
+                        editingNote.items.forEach((item, i) => item.order = i);
+                        renderEditorContent();
+                        setTimeout(() => {
+                            const newInput = document.querySelector(`.item-row[data-item-id="${newItem.id}"] .item-input`);
+                            if (newInput) newInput.focus();
+                        }, 0);
+                    }
+                });
+            });
+
+            document.querySelectorAll('[data-action="toggle-item-editor"]').forEach(wrapper => {
+                wrapper.addEventListener('click', () => {
+                    const itemId = wrapper.dataset.itemId;
+                    const item = editingNote.items.find(i => i.id === itemId);
+                    if (item) {
+                        item.completed = !item.completed;
+                        const row = wrapper.closest('.item-row');
+                        const checkbox = wrapper.querySelector('.checkbox');
+                        const input = row.querySelector('.item-input');
+                        checkbox.classList.toggle('checked', item.completed);
+                        input.classList.toggle('done', item.completed);
+                        if (item.completed) checkbox.innerHTML = '<span class="checkmark">✓</span>';
+                        else checkbox.innerHTML = '';
+                    }
+                });
+            });
+
+            document.querySelectorAll('[data-action="delete-item"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const itemId = btn.dataset.itemId;
+                    const row = btn.closest('.item-row');
+                    row.classList.add('removing');
+                    setTimeout(() => {
+                        editingNote.items = editingNote.items.filter(i => i.id !== itemId);
+                        editingNote.items.forEach((item, i) => item.order = i);
+                        renderEditorContent();
+                    }, 190);
+                });
+            });
+
+            const addItemInput = document.getElementById('addItemInput');
+            if (addItemInput) {
+                addItemInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && e.target.value.trim()) {
+                        e.preventDefault();
+                        const newItem = {
+                            id: uid(), text: e.target.value.trim(), completed: false, order: editingNote.items.length
+                        };
+                        editingNote.items.push(newItem);
+                        renderEditorContent();
+                        setTimeout(() => {
+                            const input = document.querySelector(`.item-row[data-item-id="${newItem.id}"] .item-input`);
+                            if (input) input.focus();
+                        }, 0);
+                    }
+                });
+            }
+        };
+
+        const closeEditor = () => {
+            const editor = document.querySelector('.editor');
+            const fab = document.querySelector('.fab');
+            if (editor) {
+                editor.classList.add('closing');
+                if (fab) {
+                    fab.style.transition = 'opacity 280ms var(--ease-motion), transform 280ms var(--ease-motion)';
+                    fab.style.opacity = '0';
+                    fab.style.transform = 'scale(0.6)';
+                }
+                setTimeout(() => {
+                    if (editor.parentElement) editor.remove();
+                    if (fab && fab.parentElement) fab.remove();
+                    editingNote = null;
+                }, 280);
+            } else {
+                editingNote = null;
+            }
+        };
+
+        const saveNote = () => {
+            if (!editingNote) return;
+            const cleanedItems = editingNote.items
+                .filter(item => item.text.trim())
+                .map((item, order) => ({ ...item, text: item.text.trim(), order }));
+            const note = {
+                ...editingNote, title: editingNote.title.trim(), body: editingNote.body,
+                items: cleanedItems, updatedAt: Date.now()
+            };
+            const existing = notes.find(n => n.id === note.id);
+            let isNew = false;
+            if (!existing) {
+                if (!noteHasContent(note)) { closeEditor(); return; }
+                note.completedAt = isNoteCompleted(note) ? Date.now() : null;
+                notes.unshift(note);
+                isNew = true;
+            } else {
+                if (!noteHasContent(note)) {
+                    notes = notes.filter(n => n.id !== note.id);
+                } else {
+                    const was = isNoteCompleted(existing);
+                    const now = isNoteCompleted(note);
+                    if (!was && now) note.completedAt = Date.now();
+                    else if (was && !now) note.completedAt = null;
+                    else note.completedAt = existing.completedAt;
+                    notes = notes.map(n => n.id === note.id ? note : n);
+                }
+            }
+            saveNotes();
+            closeEditor();
+            setTimeout(() => {
+                renderNotes({ newNoteId: isNew ? note.id : null, animateReorder: true });
+            }, 300);
+        };
+
+        const toggleSearch = () => {
+            searchOpen = !searchOpen;
+            const container = document.getElementById('searchContainer');
+            const toggle = document.getElementById('searchToggle');
+            const input = document.getElementById('searchInput');
+            if (searchOpen) {
+                container.classList.remove('closing');
+                container.classList.add('open');
+                toggle.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18"></path>
+                        <path d="m6 6 12 12"></path>
+                    </svg>
+                `;
+                setTimeout(() => input.focus(), 150);
+            } else {
+                container.classList.add('closing');
+                container.classList.remove('open');
+                toggle.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                `;
+                input.value = '';
+                searchQuery = '';
+                isSearching = false;
+                renderNotes({ animateReorder: true });
+                setTimeout(() => container.classList.remove('closing'), 300);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadNotes();
+            renderNotes({ animateReorder: false });
+            document.getElementById('createButton').addEventListener('click', () => openEditor(null));
+            document.getElementById('searchToggle').addEventListener('click', toggleSearch);
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                searchQuery = e.target.value;
+                isSearching = searchQuery.trim().length > 0;
+                renderNotes({ animateReorder: false });
+            });
+        });
+    </script>
+</body>
+</html>
